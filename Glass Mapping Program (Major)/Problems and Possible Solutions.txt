@@ -1,0 +1,28 @@
+Main problems and possible solutions of my glass mapping method
+===============================================================	
+
+I did several experiments in different buildings and floors. It turned out that my method works well in Bldg 14, 10st floor, Bldg 11, 2nd and 3rd floor, but cannot work well in Bldg 2, 1st floor, Bldg 3, 1st and 2nd floor. The main problem in the last 3 environments is glass to clean and cannot be shown on the map as occupied. 
+
+As I analyzed, the main reason of the aboved mentioned problem is because the glass in these environments is too clean, and therefore too little chance for the LRF to receive reflected laser from the glass. For this reason, the glass's occupancy probability is too low. Even the filtering occupancy threshold for glass was decreased compared with non-glass, the glass was still filtered out as noise. 
+
+For better understanding, I'd give a comparison between different glass conditions:
+(Please not that the numbers for the visible angle range in the following comparison is just approximate values)
+
+- non-glass can be seen by a LRF from almost -90 deg to +90 deg --> shown as occupied using standard SLAM
+- glass in Bldg 14, 10th floor can be seen in -+50 deg; --> shown as occupied using standard SLAM, same with non-glass
+- glass in Bldg 11, 2nd floor can be seen in -+25 deg; ---> cannot be shown as occupied using standard SLAM, but can be shown using my method
+- glass in Bldg 3, 2nd floor can only be seen in -+5 deg. --> cannot be shown as occupied using no matter standard SLAM or my method
+
+Only being able to be seen in -+5 deg makes the glass have almost same noise caused by localization errors, therefore it is very difficult to shown it as occupied just by decreasing the threshold. Also, the narrow visible angle range makes it harder to detect the lines of the glass planes, which leads to inaccurate incident angle calculation. In this way, the narrow visible angle range also negatively influence the classification accuracy of glass and non-glass.
+
+One possible solution to this problem, is to combine [Wang, 2017]'s method together with mine. Wang detect glass by detecting the glass' intensity peak caused by specular reflection. Their method does not use the incident angle at all, and therefore will not be influenced by the inaccurated incident angle calculation. But usually the intensity peak appears only near to a surface's perpandicular position, therefore, if the glass in Bldg 3, 2nd floor can be scanned from that position by the LRF, it can be detected and shown on the map using Wang's method theoretically. 
+
+I tried to rebuid Wang's method in my program (and you can find a function named "glassDetectWang" in the file "GlassMapOnLineTest.py"), but the result is not satisfying. The resulting map I got for Bldg 3, 2nd floor is of far low accuracy compared with the results in their paper. I think the possible reason is in my main program, the looping frequency is too low (1 Hz), which means the program cannot process all the scans output by the LRF (which is 40Hz). I think maybe, (I cannot promise), maybe after increasing the looping frequency and giving Wang's method all the scan output by the LRF, it will work better. However, the frequency of my main program is restricted by the running speed of my method. If every thing runs smoothly, my method currently needs about 1 sec for each loop to finish its processing, therefore it is not easy to increase the looping frequency. Still, there are two ways to solve the current difficulities. 
+
+Fist, increase the running speed of my method. This need to check in "GlassMapOnLineTest.py", each functions consumes how much time, and try to optimize them. Two parts might consume a lot of time, one is the neural network, and the other one is plotting out the map. I improved the neural network's structure to allow it run faster, but it seems still not fast enough.
+
+Second, an easier way is to run Wang's method in another thread. Then it can run paralelly with my program and will not be restricted by the low speed of my program. I wanted to try this way but didn't get enough time and had to start writing my thesis.
+
+Still, I need to re-emphasize, increasing the frequency and even combining Wang's method is just my hypothesis of solving the mapping problem in clean glass environments. I don't know whether they can solve the problem, therefore, please take care of yourself well if you decide to do it, and don't blame me if it turned out to be wrong.
+
+By Jiang, August 6th, 2018
