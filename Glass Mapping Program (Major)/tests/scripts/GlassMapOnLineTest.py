@@ -46,7 +46,8 @@ class GlassMapBuilder():
         self.glassMap = None 
         self.finalGlassMap = None
         self.currentScan = None  # show current LRF scan in grid map by matplotlib (might delete later)
-        self.occuThreshold = 45 # 0  100
+        self.occuThreshold = 25 # 0  100
+        self.glassThreshold = 0 # 0 -- occuThreshold
         
         # neural network
         self.GlassNN =joblib.load("/home/jiang/catkin_ws/src/tests/pkls/NN3.pkl")
@@ -463,7 +464,7 @@ class GlassMapBuilder():
         maskMap[gridMap==0] = 0.0
         
         # Two thresholds filtering: filter out non-glass grid whose occupancy probability is lower than 25%
-        index3 = np.where((gridMap<35) & (gridMap>0) ) # & (glassMap<0.7)
+        index3 = np.where((gridMap<self.occuThreshold) & (gridMap>0) ) # & (glassMap<0.7)
         for i, j in zip(index3[0], index3[1]):
             maskMap[i,j] = 0.0 # white
             
@@ -477,7 +478,7 @@ class GlassMapBuilder():
         
         # from grid map build occuGridMap: unknown -1, free 0, occupied 1
         occGridMap = np.copy(self.gridMap[minX:maxX, minY:maxY])
-        occThre = 35
+        occThre = self.occuThreshold
         occGridMap[(occGridMap<occThre) & (occGridMap>0)]=0
         occGridMap[occGridMap>=occThre]=1
         
@@ -806,7 +807,7 @@ def statExpress(dists):
 
 
 
-def main(recordInfo=True):
+def main(recordInfo=False):
     rospy.init_node("glass_map")
     glassMapBuilder = GlassMapBuilder() # initialize frame = 0
     MapPublished = False    # used to make sure publish glass map at the end
